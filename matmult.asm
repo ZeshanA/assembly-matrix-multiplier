@@ -59,8 +59,11 @@ _start:
 
 main:
           mov  rax, matrixA     ; matrixA.print ()
+          ; ^^ EXPLAINED : move the address of matrixA into rax
           push rax
+          ; ^^ EXPLAINED : push rax (which contains address of matrixA) onto stack
           call matrix_print
+          ; ^^ EXPLAINED : prints matrixA, rax contains address of matrixA
           add  rsp, 8
 
           mov  rax, matrixB     ; matrixB.print ()
@@ -87,14 +90,110 @@ main:
 ; ---------------------------------------------------------------------
 
 matrix_print:                   ; void matrix_print ()
-         push rbp                ; setup base pointer
+         push rbp               ; setup base pointer
+         ; ^^ EXPLAINED: push the current base pointer (our stick for pointing
+         ;    to things on the stack) onto the stack to preserve it
          mov  rbp, rsp
+         ; ^^ EXPLAINED: create a new base pointer which points to the top of
+         ;    the current stack
 
          ;
          ; *********************************************
          ;              YOUR CODE GOES HERE
          ; *********************************************
          ;
+
+         push rax               ; rax contains the memory address of matrix{A/B/C}, push to preserve it
+         push rbx               ; we will use rbx to store number of ROWS
+         push rcx               ; we will use rcx to store number of COLS
+         push rdx               ; we will use rdx for the row iterator
+         push r15               ; we will use r15 for the column iterator
+         push r14               ; register for temporarily storing calculations
+         push r13               ; same as r14
+         
+         mov rax, [rbp + 16]    ; address for start of matrix object
+         ; ^^ EXPLAINED: rbp is pointing to the top of the stack, which
+         ;    currently contains the PREVIOUS values (in order) of – 
+         ;    rcx, rbx, rax. We want to get the memory address of the matrix
+         ;    object, which used to be stored in rax. So we go to the top
+         ;    of the stack (rbp) and add 16 bytes (2 words/128 bits) to skip
+         ;    over the old values of rcx and rbx, hence [rbp + 16].
+         ;    The ADDRESS of the START OF THE MATRIX OBJECT is now in rax
+
+         mov rbx, [rax]         ; rbx = ROWS
+         ; ^^ EXPLAINED: the first word (8 bytes/64 bits) of the matrix object
+         ;    is the number of rows (see matrixA for a visual example),
+         ;    so we go to the memory address of the matrix object, which we
+         ;    stored in rax, and store the first 64 bits we find in rbx.
+         ;    The NUMBER OF ROWS is now in rbx
+
+         mov rcx, [rax + 8]     ; rcx = COLS
+         ; ^^ EXPLAINED: same as rbx = rows, except we want the number of
+         ;    columns, so we skip the first 8 bytes, which contained the
+         ;    number of rows
+
+         call output_newline    ; print an empty line
+         mov rdx, 0             ; rdx = 0 (row iterator, outer loop)
+
+         printRowLoop:
+            cmp rdx, rbx        ; compare rdx (row iterator) with rbx (number of rows)
+            jge printRowLoopEnd ; if rbx >= rdx, jump outside outer loop
+
+            mov r15, 0          ; r15 = 0 (column iterator, inner loop)
+
+            printColumnLoop:
+                cmp r15, rcx              ; compare r15 (column iterator) with rcx (number of columns)
+                jge printColumnLoopEnd    ; if rcx >= r15, jump outside inner loop
+                call output_tab           ; output a tab character
+
+                mov  r14, 8               ; r14 = 8
+                imul r14, rcx             ; r14 = 8 * COLS
+                imul r14, rdx             ; r14 = 8 * COLS * ROWINDEX
+                add  r14, 16              ; r14 = 16 + (8 * COLS * ROWINDEX)
+                add  r14, rax             ; r14 = rax + 16 + (8 * COLS * ROWINDEX)
+
+                mov  r13, 8               ; r13 = 8
+                imul r13, r15             ; r13 = 8 * COLINDEX
+
+                add  r14, r13             ; r14 = rax + 16 + (8 * COLS * ROWINDEX) + (8 * COLINDEX), memory address of element
+
+                ; ^^ EXPLAINED: we need to go and fetch the element we're trying to print, from memory
+                ;    The formula for the memory address of this element is 
+                ;    [RAX + 16 + (8 * COLS * ROWINDEX) + (8 * COLINDEX)] 
+                ;    Let's break that down into steps:
+                ;    RAX                        we start with the starting address of the matrix (this points to the number of ROWS right now)
+                ;    RAX + 16                   skip over the number of rows/columns by skipping 2 words (16 bytes)
+                ;    (8 * COLS * ROWINDEX)      each element is 8 bytes, there are COL number of elements in each row and we want to skip over ROWINDEX rows to get to the row of our element
+                ;    (8 * COLUMNINDEX)          each element in the row we're searching for is 8 bytes, so skip 8 bytes at a time until we reach the index of the element we want
+
+                push qword [r14]
+                call output_int           ; print the int in rax
+
+                add r15, 1                ; increment column iterator (inner loop)
+
+                jmp printColumnLoop       ; jump back to start of inner loop
+
+            printColumnLoopEnd:
+                call output_newline
+                add rdx, 1
+                jmp printRowLoop
+
+         printRowLoopEnd:       ; pop all of registers
+            pop r13
+            pop r14
+            pop r15
+            pop rdx
+            pop rcx
+            pop rbx
+            pop rax
+
+
+         ; ===========little test program ===========
+         ;push 128
+         ;call output_int
+         ;call output_newline
+         ;pop rbp
+         ; ===========================================
 
          pop  rbp                ; restore base pointer & return
          ret
