@@ -1,57 +1,8 @@
 ;
 ; ***************************************************************
-;       SKELETON: INTEL ASSEMBLER MATRIX MULTIPLY (LINUX)
+;       INTEL ASSEMBLER MATRIX MULTIPLY (LINUX)
 ; ***************************************************************
 ;
-;
-; --------------------------------------------------------------------------
-; class matrix {
-;     int ROWS              // ints are 64-bit
-;     int COLS
-;     int elem [ROWS][COLS]
-;
-;     void print () {
-;         output.newline ()
-;         for (int row=0; row < this.ROWS; row++) {
-;             for (int col=0; col < this.COLS; cols++) {
-;                 output.tab ()
-;                 output.int (this.elem[row, col])
-;             }
-;             output.newline ()
-;         }
-;     }
-;
-;     void mult (matrix A, matrix B) {
-;         for (int row=0; row < this.ROWS; row++) {
-;             for (int col=0; col < this.COLS; cols++) {
-;                 int sum = 0
-;                 for (int k=0; k < A.COLS; k++)
-;                     sum = sum + A.elem[row, k] * B.elem[k, col]
-;                 this.elem [row, col] = sum
-;             }
-;         }
-;     }
-; }
-; ---------------------------------------------------------------------------
-; main () {
-;     matrix matrixA, matrixB, matrixC  ; Declare and suitably initialise
-;                                         matrices A, B and C
-;     matrixA.print ()
-;     matrixB.print ()
-;     matrixC.mult (matrixA, matrixB)
-;     matrixC.print ()
-; }
-; ---------------------------------------------------------------------------
-;
-; Notes:
-; 1. For conditional jump instructions use the form 'Jxx NEAR label'  if label
-;    is more than 127 bytes from the jump instruction Jxx.
-;    For example use 'JGE NEAR end_for' instead of 'JGE end_for', if the
-;    assembler complains that the label end_for is more than 127 bytes from
-;    the JGE instruction with a message like 'short jump is out of  range'
-;
-;
-; ---------------------------------------------------------------------------
 
 segment .text
         global  _start
@@ -59,11 +10,8 @@ _start:
 
 main:
           mov  rax, matrixA     ; matrixA.print ()
-          ; ^^ EXPLAINED : move the address of matrixA into rax
-          push rax
-          ; ^^ EXPLAINED : push rax (which contains address of matrixA) onto stack
-          call matrix_print
-          ; ^^ EXPLAINED : prints matrixA, rax contains address of matrixA
+          push rax              ; push address of matrixA) onto stack
+          call matrix_print     ; print matrixA
           add  rsp, 8
 
           mov  rax, matrixB     ; matrixB.print ()
@@ -91,17 +39,7 @@ main:
 
 matrix_print:                   ; void matrix_print ()
          push rbp               ; setup base pointer
-         ; ^^ EXPLAINED: push the current base pointer (our stick for pointing
-         ;    to things on the stack) onto the stack to preserve it
          mov  rbp, rsp
-         ; ^^ EXPLAINED: create a new base pointer which points to the top of
-         ;    the current stack
-
-         ;
-         ; *********************************************
-         ;              YOUR CODE GOES HERE
-         ; *********************************************
-         ;
 
          push rax               ; rax contains the memory address of matrix{A/B/C}, push to preserve it
          push rbx               ; we will use rbx to store number of ROWS
@@ -112,25 +50,10 @@ matrix_print:                   ; void matrix_print ()
          push r13               ; same as r14
          
          mov rax, [rbp + 16]    ; address for start of matrix object
-         ; ^^ EXPLAINED: rbp is pointing to the top of the stack, which
-         ;    currently contains the PREVIOUS values (in order) of – 
-         ;    rcx, rbx, rax. We want to get the memory address of the matrix
-         ;    object, which used to be stored in rax. So we go to the top
-         ;    of the stack (rbp) and add 16 bytes (2 words/128 bits) to skip
-         ;    over the old values of rcx and rbx, hence [rbp + 16].
-         ;    The ADDRESS of the START OF THE MATRIX OBJECT is now in rax
 
          mov rbx, [rax]         ; rbx = ROWS
-         ; ^^ EXPLAINED: the first word (8 bytes/64 bits) of the matrix object
-         ;    is the number of rows (see matrixA for a visual example),
-         ;    so we go to the memory address of the matrix object, which we
-         ;    stored in rax, and store the first 64 bits we find in rbx.
-         ;    The NUMBER OF ROWS is now in rbx
 
          mov rcx, [rax + 8]     ; rcx = COLS
-         ; ^^ EXPLAINED: same as rbx = rows, except we want the number of
-         ;    columns, so we skip the first 8 bytes, which contained the
-         ;    number of rows
 
          call output_newline    ; print an empty line
          mov rdx, 0             ; rdx = 0 (row iterator, outer loop)
@@ -157,15 +80,6 @@ matrix_print:                   ; void matrix_print ()
 
                 add  r14, r13             ; r14 = rax + 16 + (8 * COLS * ROWINDEX) + (8 * COLINDEX), memory address of element
 
-                ; ^^ EXPLAINED: we need to go and fetch the element we're trying to print, from memory
-                ;    The formula for the memory address of this element is 
-                ;    [RAX + 16 + (8 * COLS * ROWINDEX) + (8 * COLINDEX)] 
-                ;    Let's break that down into steps:
-                ;    RAX                        we start with the starting address of the matrix (this points to the number of ROWS right now)
-                ;    RAX + 16                   skip over the number of rows/columns by skipping 2 words (16 bytes)
-                ;    (8 * COLS * ROWINDEX)      each element is 8 bytes, there are COL number of elements in each row and we want to skip over ROWINDEX rows to get to the row of our element
-                ;    (8 * COLUMNINDEX)          each element in the row we're searching for is 8 bytes, so skip 8 bytes at a time until we reach the index of the element we want
-
                 push qword [r14]
                 call output_int           ; print the int in rax
 
@@ -187,14 +101,6 @@ matrix_print:                   ; void matrix_print ()
             pop rbx
             pop rax
 
-
-         ; ===========little test program ===========
-         ;push 128
-         ;call output_int
-         ;call output_newline
-         ;pop rbp
-         ; ===========================================
-
          pop  rbp                ; restore base pointer & return
          ret
 
@@ -204,12 +110,6 @@ matrix_mult:                    ; void matix_mult (matrix A, matrix B)
 
          push rbp                ; setup base pointer
          mov  rbp, rsp
-
-         ;
-         ; *********************************************
-         ;              YOUR CODE GOES HERE
-         ; *********************************************
-         ;
 
          pop  rbp                ; restore base pointer & return
          ret
@@ -356,7 +256,6 @@ matrixC DQ 2                    ; ROWS
 
 ; ---------------------------------------------------------------------
 
-        ; The following is used by output_char - do not disturb
-        ;
-        ; space in I/O-accessible segment for 1-octet output buffer
+; The following is used by output_char - do not disturb
+; space in I/O-accessible segment for 1-octet output buffer
 octetbuffer     DQ 0            ; (qword as choice of size on stack)
