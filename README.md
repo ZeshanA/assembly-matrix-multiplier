@@ -9,4 +9,4 @@ matrixA DQ 2        ; Number of rows
         DQ 1, 2, 3  ; Row 1
         DQ 4, 5, 6  ; Row 2
 ```
-2. Running `./compile.sh` from within the directory to compile *and* execute the program.
+2. Run `./compile.sh` from within the directory to compile *and* execute the program.
